@@ -42,13 +42,14 @@ export function generateProblem(
 
   let value: number;
   if (difficulty === 1) {
-    // simple powers of 2: 0.5, 1, 2, 4
-    const choices = [0.5, 1, 2, 4];
-    value = choices[Math.floor(Math.random() * choices.length)];
+    // simple: small integer + 0.5 (mantissa is never all-zero)
+    const intPart = Math.floor(Math.random() * 4); // 0-3
+    value = intPart + 0.5;
   } else if (difficulty === 2) {
-    // integers 1-8
+    // integer + one fractional bit (0.5 or 0.25)
     const intPart = Math.floor(Math.random() * 8) + 1;
-    value = intPart;
+    const frac = Math.random() < 0.5 ? 0.5 : 0.25;
+    value = intPart + frac;
   } else if (difficulty === 3) {
     // integer + one fractional bit
     const intPart = Math.floor(Math.random() * 8);
@@ -71,7 +72,12 @@ export function generateProblem(
     if (value === 0) value = 0.0625;
   }
 
-  return computeIEEE754(value, format, difficulty);
+  const problem = computeIEEE754(value, format, difficulty);
+  // Reject integer-only problems (all-zero mantissa) and retry
+  if (problem.significantMantissaLength === 0) {
+    return generateProblem(format, difficulty);
+  }
+  return problem;
 }
 
 export function computeIEEE754(
